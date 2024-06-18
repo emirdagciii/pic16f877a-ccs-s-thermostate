@@ -1,0 +1,101 @@
+#include <16f877.h>
+#device ADC=10 // 0 ile 1023
+#use delay(clock=4000000)
+#fuses XT, NOWDT, NOPUT, NOLVP, NOCPD, NOPROTECT, NODEBUG, NOBROWNOUT, NOWRT
+
+#use fast_io(a)
+#use fast_io(b)
+#use fast_io(d)
+
+#define yukari pin_d0
+#define asagi  pin_d1
+#define use_portb_lcd TRUE
+#define led pin_c0
+
+#include <lcd.c>
+
+unsigned long int deger; 
+float gerilim, sicaklik;
+signed int8 ayar=0;
+int1 ayar_yukari=1;
+int1 eski_yukari=1;
+int1 ayar_asagi=1;
+int1 eski_asagi=1;
+
+void main()
+{
+    setup_psp(PSP_DISABLED);
+    setup_timer_1(T1_DISABLED);
+    setup_CCP1(CCP_OFF);
+    setup_CCP2(CCP_OFF);
+
+    set_tris_a(0x20); // Port A konfigürasyonu
+    set_tris_b(0x00); // Port B konfigürasyonu
+    set_tris_d(0xFF); // Port D konfigürasyonu
+    set_tris_c(0x00); // Port C konfigürasyonu
+
+    lcd_init();
+    setup_adc(adc_clock_div_32); 
+    setup_adc_ports(ALL_ANALOG); // AN4 için ADC ayarlarý
+
+    set_adc_channel(4); 
+    delay_us(20);
+
+    printf(lcd_putc,"\fSicaklik=");
+    
+
+    while(true)
+    {
+    
+        ayar_yukari = input(pin_d0);
+        if(ayar_yukari != eski_yukari)
+        {
+            eski_yukari = ayar_yukari;
+            if(ayar_yukari == 0)
+            {
+                ayar++;
+                lcd_gotoxy(8,2);
+                printf(lcd_putc,"AYAR=%d C ",ayar);
+              
+        }
+        }
+
+        ayar_asagi = input(pin_d1);
+        if(ayar_asagi != eski_asagi)
+        {
+            eski_asagi = ayar_asagi;
+            if(ayar_asagi == 0)
+            { 
+                ayar--;
+                if(ayar<0)
+                {ayar=0;}
+                lcd_gotoxy(8,2);
+                printf(lcd_putc,"AYAR=%d C ",ayar);
+              
+        }
+        }
+        
+       
+                
+        deger = read_adc();
+        gerilim = deger * 4.88760;
+        sicaklik = (gerilim / 10);
+        int sicaklik_int = (int)sicaklik;
+
+        lcd_gotoxy(10,1);
+        printf(lcd_putc,"%f C",sicaklik);
+
+        if (sicaklik_int <= ayar) 
+        {
+            output_high(led); // Ledi yak
+        } else 
+        {
+            output_low(led); // Ledi söndür
+        }
+
+        
+    }
+}
+    
+    
+

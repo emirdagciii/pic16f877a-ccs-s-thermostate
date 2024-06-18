@@ -1,0 +1,103 @@
+#include <16f877.h>
+#device ADC=10 // 0 ile 1023
+#use delay(clock=4000000)
+#fuses XT, NOWDT, NOPUT, NOLVP, NOCPD, NOPROTECT, NODEBUG, NOBROWNOUT, NOWRT
+
+#use fast_io(a)
+#use fast_io(b)
+#use fast_io(d)
+#use fast_io(c)
+
+#define yukari pin_d0
+#define asagi  pin_d1
+#define use_portb_lcd TRUE
+#define led pin_c0
+
+#include <lcd.c>
+
+unsigned long int deger; 
+float sicaklik;
+signed int8 ayar=0;
+int1 ayar_yukari=1;
+int1 eski_yukari=1;
+int1 ayar_asagi=1;
+int1 eski_asagi=1;
+
+
+void main()
+  {
+     int16 a;
+     int16 deger1;
+     int16 isi;
+     float onda;
+ 
+     SET_TRIS_D(255);
+     output_low(PIN_C1);
+     output_low(PIN_C2); 
+     setup_ccp1(CCP_PWM);
+     setup_ccp2(CCP_PWM); 
+     setup_timer_2(T2_DIV_BY_1, 255, 1);
+     set_pwm1_duty(15); 
+     delay_ms(50);
+     set_pwm2_duty(18); 
+     lcd_init();
+     printf(lcd_putc,"\f");
+     setup_adc_ports( RA0_ANALOG );
+     setup_adc(ADC_CLOCK_INTERNAL);
+     set_adc_channel(0);
+
+
+
+    while(true)
+    {
+    
+    deger=read_adc();
+       isi=((deger-160)*100)/72;
+       isi=isi/10;
+       printf(lcd_putc,"\f");
+       lcd_gotoxy(1,1);
+       printf(lcd_putc,"ADC : %lu ",deger);
+       lcd_gotoxy(1,2);
+       printf(lcd_putc,"ISI : %lu%s ",isi," C");
+       delay_ms(500);
+    
+        ayar_yukari = input(pin_d0);
+        if(ayar_yukari != eski_yukari)
+        {
+            eski_yukari = ayar_yukari;
+            if(ayar_yukari == 0)
+            {
+                ayar++;
+                lcd_gotoxy(8,2);
+                printf(lcd_putc,"AYAR=%d C ",ayar);
+              
+        }
+        }
+
+        ayar_asagi = input(pin_d1);
+        if(ayar_asagi != eski_asagi)
+        {
+            eski_asagi = ayar_asagi;
+            if(ayar_asagi == 0)
+            { 
+                ayar--;
+                if(ayar<0)
+                {ayar=0;}
+                lcd_gotoxy(8,2);
+                printf(lcd_putc,"AYAR=%d C ",ayar);
+              
+        }
+        }
+   
+        lcd_gotoxy(10,1);
+        printf(lcd_putc,"%f C",sicaklik);
+
+        if (sicaklik_int <= ayar) 
+        {
+            output_high(led); // Ledi yak
+        } else 
+        {
+            output_low(led); // Ledi söndür
+        }
+    }
+}

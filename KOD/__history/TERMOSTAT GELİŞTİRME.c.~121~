@@ -1,0 +1,55 @@
+#if defined(__PCM__)
+#include <16F877a.h>
+#device ADC=10
+#include <string.h>
+#fuses XT,NOWDT,NOPROTECT,NOLVP
+#use delay(clock=20000000)
+#define use_portb_lcd TRUE
+#include  <Lcd.c>
+
+void main()
+ {
+    int16 a=0;
+    int16 deger;
+    int16 isi;
+    float onda;
+
+    SET_TRIS_D(255);
+    output_low(PIN_C1);
+    output_low(PIN_C2);
+     setup_ccp1(CCP_PWM);
+     setup_ccp2(CCP_PWM);
+    setup_timer_2(T2_DIV_BY_1, 255, 1);
+    set_pwm1_duty(15);
+    delay_ms(50);
+    set_pwm2_duty(18);
+    lcd_init();
+    printf(lcd_putc,"\f");
+    setup_adc_ports( RA0_ANALOG );
+    setup_adc(ADC_CLOCK_INTERNAL);
+    set_adc_channel(0);
+    while(TRUE)
+      {
+      deger=read_adc();
+      isi=((deger-160)*100)/72;
+      isi=isi/10;
+      printf(lcd_putc,"\f");
+      lcd_gotoxy(1,1);
+      printf(lcd_putc,"ADC : %lu ",deger);
+      lcd_gotoxy(1,2);
+      if(160>=deger){isi=0 ;printf(lcd_putc,"ISI : %lu%s  ERR   ",isi," C");}
+      if(deger>=816){isi=90;printf(lcd_putc,"ISI : %lu%s  ERR   ",isi," C");}
+      else{printf(lcd_putc,"ISI : %lu%s ",isi," C");}
+      delay_ms(500);
+      ////////////////////////////////////////////////////////////////////////
+      while(!input(pin_b3)){{a++;}
+      lcd_gotoxy(1,1);
+      printf(lcd_putc,"set : %ld      ",a);
+      delay_ms(200);
+      if(a>=90){a=0;
+      }}
+      ////////////////////////////////////////////////////////////////////////
+      if(isi>=a){output_low(pin_d7);}
+      else{output_high(pin_d7);}
+      }
+ }

@@ -1,0 +1,57 @@
+#include <16f877a.h>
+#include <string.h>
+#include <stdio.h>
+
+#include <math.h>
+
+#define ohm 0xf4                    
+#define B_coefficient 3950.00      /* B coefficient of NTC Thermistor*/
+#define Room_temperature 25.00
+#define Series_Resistance 10000.00
+
+float Get_Temperature(int);
+
+long NTC_Resistance;
+
+void main(void)
+{
+    float Temperature;
+    
+    OSCCON =0x72;
+   LCD_Init();                    /* initialize LCD16x2 */
+   LCD_Clear();                 /* clear LCD */
+   ADC_Init();                    /* initialize ADC */
+   char Temperature_buffer[20],Resistance[20];
+   int Analog_Input;
+    
+    while(1)
+   {
+      Analog_Input = ADC_Read(0);   /* store the analog data on a variable */
+      Temperature = Get_Temperature(Analog_Input);
+                  
+      sprintf(Temperature_buffer,"Temp: %.2f%cC  ",Temperature,0xdf);  /* convert integer to ASCII string */
+        LCD_String_xy(0, 0, Temperature_buffer);
+      
+        sprintf(Resistance,"Res: %ld %c ",NTC_Resistance,ohm);
+        LCD_String_xy(1,0,Resistance);
+        MSdelay(1000);   /* wait for 1 second */
+   }
+}
+
+float Get_Temperature(int analog_value)
+{
+    float Thermistor_temperature;
+    analog_value = ADC_Read(0);      /* store adc value on val register */
+
+    /* calculate the NTC resistance */
+   NTC_Resistance = ((1023*Series_Resistance/analog_value) - Series_Resistance);         
+   Thermistor_temperature = log(NTC_Resistance);   /* calculate natural log of resistance */
+
+    /* Calculate Temperature using B parameter Equation */
+    /* 1/T = 1/T0 + ((1/B_coefficient)*log(NTC_Resistance/Series_Resistance)) */
+    Thermistor_temperature = (1.0/(Room_temperature + 273.15))+
+                             (1.0/B_coefficient)*log(NTC_Resistance/Series_Resistance));
+    Thermistor_temperature = (1/Thermistor_temperature) - 273.15;   /* convert kelvin to °C */
+   
+   return Thermistor_temperature;
+}
